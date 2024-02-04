@@ -23,6 +23,10 @@ namespace ProcessadorTarefas.Entidades
 
         private bool StopExecution { get; set; }
 
+        internal Tarefa()
+        {
+
+        }
         //new task
         public Tarefa(long Id)
         {
