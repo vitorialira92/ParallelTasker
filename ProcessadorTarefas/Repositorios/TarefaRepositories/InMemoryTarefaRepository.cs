@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ProcessadorTarefas.Repositorios.TarefaRepositories
 {
-    internal class InMemoryTarefaRepository : IRepository<Tarefa>
+    public class InMemoryTarefaRepository : IRepository<Tarefa>
     {
         private static List<Tarefa> tarefas;
         public InMemoryTarefaRepository()
