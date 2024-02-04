@@ -3,7 +3,7 @@
     internal interface IRepository<T>
     {
         IEnumerable<T> GetAll();
-        T? GetById(int id);
+        T? GetById(long id);
         void Add(T entity);
         void Update(T entity);
     }
