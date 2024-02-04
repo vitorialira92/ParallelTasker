@@ -9,9 +9,9 @@ namespace ProcessadorTarefas.Entidades
 {
     public static class ConfigurationValues
     {
-        public static int QuantidadeDeTarefasExecutadas { get; set; }
-        public static int QuantidadeMaximaDeSubtarefas { get; set; }
-        public static TipoArmazenamento Armazenamento { get; set; }
+        public static int QuantidadeDeTarefasExecutadas { get; private set; }
+        public static int QuantidadeMaximaDeSubtarefas { get; private set; }
+        public static TipoArmazenamento Armazenamento { get; private set; }
 
         public static void SetValues(int quantidadeDeTarefasExecutadas,
             int quantidadeMaximaDeSubtarefas, TipoArmazenamento armazenamento)
