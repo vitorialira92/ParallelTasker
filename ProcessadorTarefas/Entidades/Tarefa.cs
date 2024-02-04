@@ -63,16 +63,17 @@ namespace ProcessadorTarefas.Entidades
         {
             if (!this.Estado.EPossivelExecutar())
             {
-                StopExecution = true;
+                StopExecution = false;
                 this.Estado = EstadoTarefa.EmExecucao;
-
-                IniciadaEm = DateTime.Now;
+                
+                if(IniciadaEm == default)
+                    IniciadaEm = DateTime.Now;
 
                 List<Subtarefa> tarefasExecutadas = this.SubtarefasPendentes.ToList();
-                int i = 0;
+
                 foreach (var subtarefa in tarefasExecutadas)
                 {
-                    if (!StopExecution)
+                    if (StopExecution)
                         return;
 
                     await Task.Delay(subtarefa.Duracao);
@@ -98,7 +99,7 @@ namespace ProcessadorTarefas.Entidades
 
             if(this.Estado != EstadoTarefa.EmExecucao) return false;
 
-            StopExecution = false;
+            StopExecution = true;
 
             this.Estado = EstadoTarefa.EmPausa;
             
@@ -120,6 +121,7 @@ namespace ProcessadorTarefas.Entidades
             if (!this.Estado.EPossivelCancelar())
                 return false;
 
+            StopExecution = true;
             this.Estado = EstadoTarefa.Cancelada;
 
             return true;
