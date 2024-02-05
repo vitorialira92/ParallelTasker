@@ -27,7 +27,6 @@ namespace ProcessadorTarefas.Entidades
         {
 
         }
-        //new task
         public Tarefa(long Id)
         {
             this.Id = Id;
@@ -59,9 +58,17 @@ namespace ProcessadorTarefas.Entidades
             return this.Estado.EhEstadoAtivo();
         }
 
+        public bool AtualizarEstado(EstadoTarefa novoEstado)
+        {
+            if(!this.Estado.EhPossivelFazerTransicao(novoEstado))
+                return false;
+
+            this.Estado = novoEstado; return true;
+        }
+
         public async Task Executar()
         {
-            if (!this.Estado.EPossivelExecutar())
+            if (this.Estado.EPossivelExecutar())
             {
                 StopExecution = false;
                 this.Estado = EstadoTarefa.EmExecucao;
@@ -69,18 +76,24 @@ namespace ProcessadorTarefas.Entidades
                 if(IniciadaEm == default)
                     IniciadaEm = DateTime.Now;
 
-                List<Subtarefa> tarefasExecutadas = this.SubtarefasPendentes.ToList();
+                List<Subtarefa> tarefasEmExecucao = SubtarefasPendentes.ToList();
 
-                foreach (var subtarefa in tarefasExecutadas)
+                List<Subtarefa> pendentesAuxiliar = SubtarefasPendentes.ToList();
+                List<Subtarefa> executadasAuxiliar = SubtarefasExecutadas.ToList();
+
+
+                foreach (var subtarefa in tarefasEmExecucao)
                 {
                     if (StopExecution)
                         return;
 
                     await Task.Delay(subtarefa.Duracao);
 
-                    this.SubtarefasExecutadas.ToList().Add(subtarefa);
+                    executadasAuxiliar.Add(subtarefa);
+                    SubtarefasExecutadas = executadasAuxiliar;
 
-                    this.SubtarefasPendentes.ToList().Remove(subtarefa);
+                    pendentesAuxiliar.Remove(subtarefa);
+                    SubtarefasPendentes = pendentesAuxiliar;
                 }
 
                 Concluir();
@@ -133,6 +146,7 @@ namespace ProcessadorTarefas.Entidades
             int total = this.SubtarefasPendentes.ToList().Count + executadas;
 
             return new ProgressoExecucaoDeTarefa(
+                    Id,
                     executadas,
                     total
                 );
@@ -154,6 +168,7 @@ namespace ProcessadorTarefas.Entidades
 
             this.SubtarefasPendentes = subtarefas;
         }
+
     }
 
 }

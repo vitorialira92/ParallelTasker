@@ -1,9 +1,11 @@
-﻿namespace ProcessadorTarefas.Servicos
+﻿using ProcessadorTarefas.Entidades;
+
+namespace ProcessadorTarefas.Servicos
 {
-    internal interface IProcessadorTarefas
+    public interface IProcessadorTarefas
     {
         Task Iniciar();
-        Task CancelarTarefa(int idTarefa);
         Task Encerrar();
+        List<ProgressoExecucaoDeTarefa> GetProgressoTarefas();
     }
 }

@@ -11,7 +11,7 @@ namespace ProcessadorTarefas.Servicos
 {
     public class GerenciadorTarefas : IGerenciadorTarefas
     {
-        private IRepository<Tarefa> repository;
+        private readonly IRepository<Tarefa> repository;
         public GerenciadorTarefas(IRepository<Tarefa> repository)
         {
             this.repository = repository;
