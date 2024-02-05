@@ -3,6 +3,7 @@ using SOLID_Example.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -29,6 +30,21 @@ namespace ProcessadorTarefas.Repositorios.TarefaRepositories
         public Tarefa? GetById(long id)
         {
             return tarefas.FirstOrDefault(t => t.Id == id);
+        }
+
+        public IEnumerable<Tarefa> GetTheFirstNExecutable(int n)
+        {
+            int counter = 0;
+            for (int i = 0; counter < n && i < tarefas.Count; i++)
+            {
+                if (tarefas[i].Estado.EhEstadoAtivo() && tarefas[i].Estado != EstadoTarefa.EmExecucao)
+                {
+                    counter++;
+                    yield return tarefas[i];
+                }
+                    
+            }
+                
         }
 
         public void Update(Tarefa entity)
