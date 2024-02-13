@@ -16,7 +16,9 @@ namespace ProcessadorTarefas.Servicos
         private List<Tarefa> tarefasEmExecucao = new List<Tarefa>();
         private Queue<Tarefa> tarefasNaFila = new Queue<Tarefa>();
 
-        Dictionary<Tarefa, Stopwatch> tarefaStopwatchMap = new Dictionary<Tarefa, Stopwatch>();
+        private Dictionary<Tarefa, Stopwatch> tarefaStopwatchMap = new Dictionary<Tarefa, Stopwatch>();
+
+        private bool _running;
 
         public ProcessadorTarefas(IRepository<Tarefa> repositoryInstance)
         {
@@ -26,6 +28,8 @@ namespace ProcessadorTarefas.Servicos
         public async Task Iniciar()
         {
             FillQueue();
+
+            _running = true;
 
             var act = new List<Task>();
 
@@ -57,7 +61,7 @@ namespace ProcessadorTarefas.Servicos
             }
                 
 
-            while (act.Count > 0)
+            while (act.Count > 0 && _running)
             {
 
                 var completedTask = await Task.WhenAny(act);
@@ -115,7 +119,15 @@ namespace ProcessadorTarefas.Servicos
         }
         public Task Encerrar()
         {
-            throw new NotImplementedException();
+            
+            foreach (var item in tarefasEmExecucao)
+            {
+                item.Pausar();
+            }
+
+            _running = false;
+
+            return Task.CompletedTask;
         }
 
         private void FillQueue()
