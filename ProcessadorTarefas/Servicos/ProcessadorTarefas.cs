@@ -2,6 +2,7 @@
 using SOLID_Example.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,6 +15,9 @@ namespace ProcessadorTarefas.Servicos
 
         private List<Tarefa> tarefasEmExecucao = new List<Tarefa>();
         private Queue<Tarefa> tarefasNaFila = new Queue<Tarefa>();
+
+        Dictionary<Tarefa, Stopwatch> tarefaStopwatchMap = new Dictionary<Tarefa, Stopwatch>();
+
         public ProcessadorTarefas(IRepository<Tarefa> repositoryInstance)
         {
             repository = repositoryInstance;
@@ -24,49 +28,88 @@ namespace ProcessadorTarefas.Servicos
             FillQueue();
 
             var act = new List<Task>();
+
+            int counter = 0;
+
             var taskToTarefaMap = new Dictionary<Task, Tarefa>();
 
-
-            foreach (var tarefa in tarefasEmExecucao)
+            foreach (var tarefa in tarefasEmExecucao.Where(x => x.Estado ==  EstadoTarefa.EmPausa))
             {
+                Console.WriteLine($"tAREFA ID {tarefa.Id} em pausa: {tarefa.Estado.ToString()}");    
                 var task = Executar(tarefa);
                 act.Add(task);
                 taskToTarefaMap[task] = tarefa;
+
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                tarefaStopwatchMap[tarefa] = stopwatch;
+            }
+                
+            foreach (var tarefa in tarefasEmExecucao.Where(x => x.Estado != EstadoTarefa.EmExecucao))
+            {
+                Console.WriteLine($"tAREFA ID {tarefa.Id} NAO em pausa: {tarefa.Estado.ToString()}");
+
+                var task = Executar(tarefa);
+                act.Add(task);
+                taskToTarefaMap[task] = tarefa;
+
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                tarefaStopwatchMap[tarefa] = stopwatch;
             }
                 
 
-            int counter = 0;
             while (act.Count > 0)
             {
-                Console.WriteLine($"{counter} tarefas finalizadas");
 
                 var completedTask = await Task.WhenAny(act);
 
                 act.Remove(completedTask);
 
                 var tarefaConcluida = taskToTarefaMap[completedTask];
+
+                Console.WriteLine($"Tarefa {tarefaConcluida.Id} encerrada");
+
+                tarefaStopwatchMap.Remove(tarefaConcluida);
+
                 tarefasEmExecucao.Remove(tarefaConcluida);
+
                 taskToTarefaMap.Remove(completedTask);
 
                 if (tarefasNaFila.TryDequeue(out var nextTarefa))
                 {
                     var task = Executar(nextTarefa);
+
                     taskToTarefaMap[task] = nextTarefa;
+
                     act.Add(task);
+
                     tarefasEmExecucao.Add(nextTarefa);
+
+                    tarefaStopwatchMap[nextTarefa] = Stopwatch.StartNew();
                 }
 
-                counter++;
             }
             tarefasEmExecucao.Clear();
+
             tarefasNaFila.Clear();
         }
 
         public List<ProgressoExecucaoDeTarefa> GetProgressoTarefas()
         {
             List<ProgressoExecucaoDeTarefa> lista = new List<ProgressoExecucaoDeTarefa>();
-            foreach (var item in tarefasEmExecucao)
-               lista.Add(item.VerificarProgresso());
+
+            foreach (var tarefa in tarefasEmExecucao)
+            {
+                var progresso = tarefa.VerificarProgresso();
+
+                if (tarefaStopwatchMap.TryGetValue(tarefa, out var stopwatch) && stopwatch.IsRunning)
+                {
+                    int tempoDecorrido = (int)stopwatch.Elapsed.TotalSeconds - progresso.TempoDeSubtarefasExecutadas;
+                    progresso.TempoDeSubtarefasExecutadas += tempoDecorrido;
+                }
+                
+                lista.Add(progresso);
+            }
+               
 
             return lista;
         }
@@ -97,6 +140,14 @@ namespace ProcessadorTarefas.Servicos
         private async Task Executar(Tarefa tarefa)
         {
             await tarefa.Executar();
+        }
+
+        public Task Pausar(long id)
+        {
+            var tarefa = repository.GetById(id);
+            tarefa.Pausar();
+            repository.Update(tarefa);
+            return Task.CompletedTask;
         }
     }
 }

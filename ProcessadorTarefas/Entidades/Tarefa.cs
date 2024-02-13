@@ -1,4 +1,6 @@
-﻿using System.Diagnostics.Metrics;
+﻿using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using System.Text;
 
 namespace ProcessadorTarefas.Entidades
 {
@@ -8,8 +10,8 @@ namespace ProcessadorTarefas.Entidades
         EstadoTarefa Estado { get; }
         DateTime IniciadaEm { get; }
         DateTime EncerradaEm { get; }
-        IEnumerable<Subtarefa> SubtarefasPendentes { get; }
-        IEnumerable<Subtarefa> SubtarefasExecutadas { get; }
+        IEnumerable<Subtarefa> SubtarefasPendentes { get; set; }
+        IEnumerable<Subtarefa> SubtarefasExecutadas { get; set; }
     }
 
     public class Tarefa : ITarefa
@@ -18,8 +20,24 @@ namespace ProcessadorTarefas.Entidades
         public EstadoTarefa Estado { get; set; }
         public DateTime IniciadaEm { get; set; }
         public DateTime EncerradaEm { get; set; }
-        public IEnumerable<Subtarefa> SubtarefasPendentes { get; set; }
-        public IEnumerable<Subtarefa> SubtarefasExecutadas { get; set; }
+
+        private List<Subtarefa> subtarefasPendentesInternas = new List<Subtarefa>();
+
+        private List<Subtarefa> subtarefasExecutadasInternas = new List<Subtarefa>();
+
+
+        public IEnumerable<Subtarefa> SubtarefasPendentes
+        {
+            get => subtarefasPendentesInternas.AsReadOnly(); 
+            set => subtarefasPendentesInternas = new List<Subtarefa>(value);
+        }
+    
+        public IEnumerable<Subtarefa> SubtarefasExecutadas
+        {
+            get => subtarefasExecutadasInternas.AsReadOnly();
+            set => subtarefasExecutadasInternas = new List<Subtarefa>(value);
+        }
+        
 
         private bool StopExecution { get; set; }
 
@@ -35,8 +53,6 @@ namespace ProcessadorTarefas.Entidades
 
             CriarSubtarefas();
 
-            this.SubtarefasExecutadas = new List<Subtarefa>();
-
             this.IniciadaEm = default;
 
             this.EncerradaEm = default;
@@ -46,8 +62,8 @@ namespace ProcessadorTarefas.Entidades
             DateTime IniciadaEm = default, DateTime EncerradaEm = default)
         {
             this.Id = Id;
-            this.SubtarefasPendentes = subtarefasPendentes;
-            this.SubtarefasExecutadas = new List<Subtarefa>();
+            this.subtarefasPendentesInternas = subtarefasPendentes;
+            this.subtarefasExecutadasInternas = new List<Subtarefa>();
 
             this.IniciadaEm = IniciadaEm;
             this.EncerradaEm = EncerradaEm;
@@ -76,24 +92,20 @@ namespace ProcessadorTarefas.Entidades
                 if(IniciadaEm == default)
                     IniciadaEm = DateTime.Now;
 
-                List<Subtarefa> tarefasEmExecucao = SubtarefasPendentes.ToList();
+                List<Subtarefa> subtarefasEmExecucao = new List<Subtarefa>(subtarefasPendentesInternas);
 
-                List<Subtarefa> pendentesAuxiliar = SubtarefasPendentes.ToList();
-                List<Subtarefa> executadasAuxiliar = SubtarefasExecutadas.ToList();
-
-
-                foreach (var subtarefa in tarefasEmExecucao)
+                foreach (var subtarefa in subtarefasEmExecucao)
                 {
                     if (StopExecution)
                         return;
 
                     await Task.Delay(subtarefa.Duracao);
 
-                    executadasAuxiliar.Add(subtarefa);
-                    SubtarefasExecutadas = executadasAuxiliar;
+                    Console.WriteLine($"TAREFA ID {Id} - SUBTAREFA DE {subtarefa.Duracao} FINALIZADA");
 
-                    pendentesAuxiliar.Remove(subtarefa);
-                    SubtarefasPendentes = pendentesAuxiliar;
+                    subtarefasExecutadasInternas.Add(subtarefa);
+
+                    subtarefasPendentesInternas.Remove(subtarefa);
                 }
 
                 Concluir();
@@ -142,14 +154,45 @@ namespace ProcessadorTarefas.Entidades
 
         public ProgressoExecucaoDeTarefa VerificarProgresso()
         {
-            int executadas = this.SubtarefasExecutadas.ToList().Count;
-            int total = this.SubtarefasPendentes.ToList().Count + executadas;
+            int executadas = 0;
+
+            foreach (var item in this.SubtarefasExecutadas)
+                executadas += (int) item.Duracao.TotalSeconds;
+            
+            int total = executadas;
+            foreach (var item in this.SubtarefasPendentes)
+                total += (int) item.Duracao.TotalSeconds;
 
             return new ProgressoExecucaoDeTarefa(
                     Id,
                     executadas,
                     total
                 );
+        }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append($" >> Tarefa de ID {Id}\n");
+            sb.Append($" >>>> Estado: {this.Estado.GetName()}");
+            int count = 1;
+            foreach (var item in subtarefasExecutadasInternas)
+            {
+                sb.Append($"\n    > Subtarefa {count} | {(int) item.Duracao.TotalSeconds} segundos | Status: EXECUTADA");
+                count++;
+            }
+            
+            foreach (var item in subtarefasPendentesInternas)
+            {
+                sb.Append($"\n    > Subtarefa {count} | {(int) item.Duracao.TotalSeconds} segundos | Status: PENDENTE");
+                count++;
+            }
+                
+            sb.Append($"\n >>>> Total de {subtarefasExecutadasInternas.Count + subtarefasPendentesInternas.Count} Subtarefas \n" +
+                $" >>>> Tempo total para executar esta tarefa: {VerificarProgresso().TempoDeTotalDeSubtarefas} segundos\n\n");
+
+            return sb.ToString();
+
         }
 
         private void CriarSubtarefas()

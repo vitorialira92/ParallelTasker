@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -65,6 +66,19 @@ namespace ProcessadorTarefas.Entidades
                 return false;
 
             return true;
+        }
+
+        public static string GetName(this EstadoTarefa estado)
+        {
+            return estado switch
+            {
+                EstadoTarefa.Agendada => "agendada",
+                EstadoTarefa.Concluida => "concluída",
+                EstadoTarefa.Cancelada => "cancelada",
+                EstadoTarefa.EmPausa => "em pausa",
+                EstadoTarefa.Criada => "criada",
+                EstadoTarefa.EmExecucao => "em execução"
+            };
         }
     }
 }
