@@ -9,14 +9,14 @@ namespace ProcessadorTarefas.Entidades
     public class ProgressoExecucaoDeTarefa
     {
         public long Id { get; }
-        public int SubtarefasExecutadas { get; }
-        public int TotalDeSubtarefas { get; }
+        public int TempoDeSubtarefasExecutadas { get; set; }
+        public int TempoDeTotalDeSubtarefas { get; set; }
 
-        public ProgressoExecucaoDeTarefa(long id, int subtarefasExecutadas, int totalDeSubtarefas)
+        public ProgressoExecucaoDeTarefa(long id, int tempoDeSubtarefasExecutadas, int tempoTotalDeSubtarefas)
         {
             Id = id;
-            SubtarefasExecutadas = subtarefasExecutadas;
-            TotalDeSubtarefas = totalDeSubtarefas;
+            TempoDeSubtarefasExecutadas = tempoDeSubtarefasExecutadas;
+            TempoDeTotalDeSubtarefas = tempoTotalDeSubtarefas;
         }
     }
 }

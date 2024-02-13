@@ -7,5 +7,6 @@ namespace ProcessadorTarefas.Servicos
         Task Iniciar();
         Task Encerrar();
         List<ProgressoExecucaoDeTarefa> GetProgressoTarefas();
+        Task Pausar(long id);
     }
 }
